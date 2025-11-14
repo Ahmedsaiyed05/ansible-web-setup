@@ -1,0 +1,96 @@
+---
+- name: Setup Web Server - Node.js, MySQL, Apache2
+  hosts: web_servers
+  become: yes
+  gather_facts: yes
+
+  vars:
+    mysql_root_password: "Root@123"
+    mysql_db_user: "webapp_user"
+    mysql_db_password: "WebApp@123"
+    mysql_database: "webapp_db"
+
+  pre_tasks:
+    - name: Display server info
+      debug:
+        msg:
+          - "======================================"
+          - "Starting Web Server Setup"
+          - "======================================"
+          - "Hostname: {{ inventory_hostname }}"
+          - "OS: {{ ansible_os_family }}"
+          - "======================================"
+
+    - name: Update system packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+      register: apt_update
+      until: apt_update is succeeded
+      retries: 3
+      delay: 10
+
+    - name: Install basic dependencies
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - build-essential
+          - python3-dev
+        state: present
+      register: deps_install
+      until: deps_install is succeeded
+      retries: 3
+      delay: 10
+
+  roles:
+    - nodejs
+    - mysql
+    - apache2
+    - app_setup
+
+  post_tasks:
+    - name: Wait for services to settle
+      pause:
+        seconds: 3
+
+    - name: Verify MySQL is running
+      systemd:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - name: Verify Apache2 is running
+      systemd:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Check MySQL connection
+      shell: mysqladmin ping -u root -p'{{ mysql_root_password }}'
+      register: mysql_ping
+      ignore_errors: yes
+
+    - name: Display final status
+      debug:
+        msg:
+          - ""
+          - "======================================"
+          - "✓ SETUP COMPLETED SUCCESSFULLY!"
+          - "======================================"
+          - "✓ Node.js: Installed"
+          - "✓ npm: Installed"
+          - "✓ MySQL: Running"
+          - "✓ Apache2: Running"
+          - ""
+          - "Database: {{ mysql_database }}"
+          - "DB User: {{ mysql_db_user }}"
+          - ""
+          - "Access your server:"
+          - "  http://{{ inventory_hostname }}"
+          - ""
+          - "SSH to server:"
+          - "  ssh ubuntu@{{ inventory_hostname }}"
+          - "======================================"
+          - ""

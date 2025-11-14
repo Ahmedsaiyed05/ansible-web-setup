@@ -1,0 +1,30 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install Apache2
+  apt:
+    name:
+      - apache2
+      - apache2-utils
+    state: present
+  register: apache_install
+  until: apache_install is succeeded
+  retries: 3
+  delay: 10
+
+- name: Start Apache2
+  systemd:
+    name: apache2
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Display Apache2 setup
+  debug:
+    msg:
+      - "✓ Apache2 installed and running"
+      - "✓ Default page: http://{{ inventory_hostname }}"
+      - "✓ Port: 80"

@@ -1,0 +1,6 @@
+---
+- name: Display app setup complete
+  debug:
+    msg:
+      - "✓ Web server is ready"
+      - "✓ Access default page at http://{{ inventory_hostname }}"

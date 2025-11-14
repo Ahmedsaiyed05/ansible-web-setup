@@ -1,0 +1,33 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install Node.js and npm from Ubuntu repos
+  apt:
+    name:
+      - nodejs
+      - npm
+      - build-essential
+    state: present
+  register: nodejs_install
+  until: nodejs_install is succeeded
+  retries: 3
+  delay: 10
+
+- name: Get Node.js version
+  shell: node --version
+  register: node_version
+  changed_when: false
+
+- name: Get npm version
+  shell: npm --version
+  register: npm_version
+  changed_when: false
+
+- name: Display Node.js setup
+  debug:
+    msg:
+      - "✓ Node.js: {{ node_version.stdout }}"
+      - "✓ npm: {{ npm_version.stdout }}"
